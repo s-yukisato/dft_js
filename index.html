@@ -29,8 +29,8 @@
     </form>
 
     <p>時間領域</p>
+    <p id="function"></p>
     <canvas id="canvas" width="500" height="400"></canvas>
-    <p>周波数領域</p>
     <canvas id="frequency-graph" width="500" height="400">周波数領域</canvas>
     <script>
         const canvas = document.getElementById('canvas');
@@ -48,6 +48,7 @@
 
         function main() {
             getValue();
+            setFunc();
             drawing();
         }
         function getValue() {
@@ -55,13 +56,29 @@
             sin_frequency = document.getElementById('sin_frequency').value;
             cos_amplitude = document.getElementById('cos_amplitude').value;
             cos_frequency = document.getElementById('cos_frequency').value;
-            P = document.getElementById('sample').value;
+            console.log(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency)
+            P = document.getElementById('sample').value == "" ? 10 : document.getElementById('sample').value;
+        }
+
+        function setFunc() {
+            const func = document.getElementById('function');
+            if(sin_amplitude == 0 && cos_amplitude == 0) {
+                func.innerHTML = "y = 0"
+            } else if(sin_amplitude == 0) {
+                func.innerHTML = "y=" + (cos_amplitude == 1 ? "" : cos_amplitude) + "cos(" + (cos_frequency == 1 ? '' : cos_frequency) + "x)"
+            } else if(cos_amplitude == 0) {
+                func.innerHTML = "y=" + (sin_amplitude == 1 ? "" : sin_amplitude) + "sin(" + (sin_frequency == 1 ? '' : sin_frequency) + "x)"
+            } else {
+                func.innerHTML = "y=" + (sin_amplitude == 1 ? "" : sin_amplitude) + "sin(" + (sin_frequency == 1 ? '' : sin_frequency) + "x)+" +
+                    + (cos_amplitude == 1 ? "" : cos_amplitude) + "cos(" + (cos_frequency == 1 ? '' : cos_frequency) + "x)"
+            }
         }
 
         function drawing() {
             // canvas上のデータを全て消す
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
             // 補助線
+            ctx.strokeStyle = "black"
             auxiliary_line(ctx)
             Graph();
 
@@ -89,9 +106,8 @@
             line(context, 20, HEIGHT - 10, 20, 10)
         }
 
-        function Graph(color = "#ff00ff") {
+        function Graph(color = "#8a2be2") {
             ctx.beginPath();
-            ctx.strokeStyle = color;
             ctx.lineWidth = 2.0;
             var N = WIDTH;
 
@@ -102,10 +118,32 @@
                 var y = HEIGHT / 2 - func_y_graph(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, n)
 
                 if (n == 0) {
+                    let max = Math.max(sin_amplitude, cos_amplitude)
+                    let tate = Math.abs((HEIGHT / 2) - y) / cos_amplitude
+                    let c = 0
+                    for (let i = HEIGHT / 2; i > 0; i -= tate) {
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'
+                        line(ctx, x - 10, i, WIDTH, i)
+                        ctx.fillStyle = 'rgba(0, 0, 0)'
+                        ctx.font = '6pt Arial';
+                        ctx.fillText(c, x - 18, i);
+                        c++
+                    }
+                    c = 0
+                    for (let i = HEIGHT / 2; i < HEIGHT; i += tate) {
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'
+                        line(ctx, x - 10, i, WIDTH, i)
+                        ctx.fillStyle = 'rgba(0, 0, 0)'
+                        ctx.font = '6pt Arial';
+                        ctx.fillText(c, x - 18, i);
+                        c--
+                    }
+                    ctx.stroke()
                     ctx.moveTo(x, y);
                     ctx.arc(x, y, 5, 0 * Math.PI / 180, 360 * Math.PI / 180, false);
                     ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
                     ctx.fill();
+                    ctx.strokeStyle = color
                 } else {
                     if (n % space == 0) {
                         ctx.stroke()
@@ -115,16 +153,14 @@
                         ctx.fill();
                         // 補助線
                         ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-                        ctx.moveTo(x, 0);
-                        ctx.lineTo(x, HEIGHT);
+                        ctx.moveTo(x, 10);
+                        ctx.lineTo(x, HEIGHT - 10);
                         ctx.stroke();
 
                         ctx.closePath();
                         ctx.beginPath();
                         ctx.strokeStyle = color;
                         ctx.moveTo(x, y)
-
-
                     } else {
                         ctx.lineTo(x, y);
                     }
@@ -139,13 +175,13 @@
         // 2π周期
         function func_y_graph(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, n) {
             const max = Math.max(sin_amplitude, cos_amplitude)
+            // const max = sin_amplitude + cos_amplitude
             return (
-                sin_amplitude * Math.sin(sin_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 3)
-                + cos_amplitude * Math.cos(cos_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 3)
+                sin_amplitude * Math.sin(sin_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 4)
+                + cos_amplitude * Math.cos(cos_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 4)
             )
         }
 
-        // // 原関数 3sin(x) + 7cos(3x) 定義
         function func_y(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, x) {
             return sin_amplitude * Math.sin(sin_frequency * x) + cos_amplitude * Math.cos(cos_frequency * x);
         }
@@ -157,7 +193,7 @@
                 let x = ((2.0 * Math.PI) / P) * m
                 f[m] = func_y(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, x)
             }
-            f.forEach((a, index) => console.log(index, a))
+            // show(f)
 
             // DFT係数計算
             console.log("次数\t実数部\t虚数部\t絶対値");
@@ -167,7 +203,6 @@
                 let x;
                 for (let m = 0; m < P; m++) {
                     x = ((2.0 * Math.PI) / P) * m * n;
-                    // console.log("n=" + n, "m=" + m,f[m] * Math.cos(-x))
                     ar += f[m] * Math.cos(-x);
                     ai += f[m] * Math.sin(-x);
                 }
@@ -186,10 +221,10 @@
             }
             function draw_dft(content, x, n) {
                 let w = WIDTH / P - (WIDTH / (P * 10));
-                let bar = x * 20;
+                let bar = x * 10;
                 line(context, (w / 2) + w * n, HEIGHT / 2, (w / 2) + w * n, HEIGHT / 2 + 20)
                 context.font = '6pt Arial';
-                if(x != 0){
+                if (x != 0) {
                     content.fillStyle = 'rgba(0, 255, 0)'
                     context.font = '10pt Arial';
                     content.fillText(x, (w / 2) + w * n, HEIGHT / 2 - bar + 20);
@@ -204,10 +239,13 @@
             }
         }
 
-
-
+        function show(f) {
+            // const show = document.getElementById('digital')
+            // show.innerHTML = ""
+            // f.forEach(element => {
+            //     show.innerHTML += element + "<br>"
+            // });
+        }
     </script>
-
 </body>
-
 </html>
