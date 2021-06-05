@@ -41,6 +41,7 @@
 
         const WIDTH = 500;
         const HEIGHT = 400;
+        const blank = 20;
 
         let sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, P;
 
@@ -69,7 +70,7 @@
             } else if(cos_amplitude == 0) {
                 func.innerHTML = "y=" + (sin_amplitude == 1 ? "" : sin_amplitude) + "sin(" + (sin_frequency == 1 ? '' : sin_frequency) + "x)"
             } else {
-                func.innerHTML = "y=" + (sin_amplitude == 1 ? "" : sin_amplitude) + "sin(" + (sin_frequency == 1 ? '' : sin_frequency) + "x)+" +
+                func.innerHTML = "y=" + (sin_amplitude == 1 ? "" : sin_amplitude) + "sin(" + (sin_frequency == 1 ? '' : sin_frequency) + "x)+"
                     + (cos_amplitude == 1 ? "" : cos_amplitude) + "cos(" + (cos_frequency == 1 ? '' : cos_frequency) + "x)"
             }
         }
@@ -103,17 +104,17 @@
             // x軸
             line(context, 0, HEIGHT / 2, WIDTH, HEIGHT / 2)
             // y軸
-            line(context, 20, HEIGHT - 10, 20, 10)
+            line(context, blank, HEIGHT - 10, blank, 10)
         }
 
         function Graph(color = "#8a2be2") {
             ctx.beginPath();
             ctx.lineWidth = 2.0;
-            var N = WIDTH;
+            var N = WIDTH - blank;
 
             const space = N / P;
             for (var n = 0; n < N; n++) {
-                var x = n + 20;
+                var x = n + blank;
                 // var y = HEIGHT / 2 - Math.sin(2 * Math.PI * n / WIDTH) * HEIGHT / 2;
                 var y = HEIGHT / 2 - func_y_graph(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, n)
 
@@ -122,26 +123,26 @@
                     let tate = Math.abs((HEIGHT / 2) - y) / cos_amplitude
                     let c = 0
                     for (let i = HEIGHT / 2; i > 0; i -= tate) {
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
                         line(ctx, x - 10, i, WIDTH, i)
                         ctx.fillStyle = 'rgba(0, 0, 0)'
                         ctx.font = '6pt Arial';
-                        ctx.fillText(c, x - 18, i);
+                        ctx.fillText(c, x - blank + 2, i);
                         c++
                     }
                     c = 0
                     for (let i = HEIGHT / 2; i < HEIGHT; i += tate) {
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
                         line(ctx, x - 10, i, WIDTH, i)
                         ctx.fillStyle = 'rgba(0, 0, 0)'
                         ctx.font = '6pt Arial';
-                        ctx.fillText(c, x - 18, i);
+                        ctx.fillText(c, x - blank + 2, i);
                         c--
                     }
                     ctx.stroke()
                     ctx.moveTo(x, y);
                     ctx.arc(x, y, 5, 0 * Math.PI / 180, 360 * Math.PI / 180, false);
-                    ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+                    ctx.fillStyle = "rgba(255, 0, 0)";
                     ctx.fill();
                     ctx.strokeStyle = color
                 } else {
@@ -149,14 +150,13 @@
                         ctx.stroke()
                         ctx.beginPath();
                         ctx.arc(x, y, 5, 0 * Math.PI / 180, 360 * Math.PI / 180, false);
-                        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                        ctx.fillStyle = 'rgba(255, 0, 0)';
                         ctx.fill();
                         // 補助線
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                         ctx.moveTo(x, 10);
                         ctx.lineTo(x, HEIGHT - 10);
                         ctx.stroke();
-
                         ctx.closePath();
                         ctx.beginPath();
                         ctx.strokeStyle = color;
@@ -168,17 +168,12 @@
             }
             ctx.stroke();
         }
-
-        function addList(n) {
-
-        }
         // 2π周期
         function func_y_graph(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, n) {
             const max = Math.max(sin_amplitude, cos_amplitude)
-            // const max = sin_amplitude + cos_amplitude
             return (
-                sin_amplitude * Math.sin(sin_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 4)
-                + cos_amplitude * Math.cos(cos_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 4)
+                sin_amplitude * Math.sin(sin_frequency * n * 2 * Math.PI  / (WIDTH - blank)) * HEIGHT / (max * 4)
+                + cos_amplitude * Math.cos(cos_frequency * n * 2 * Math.PI / (WIDTH - blank)) * HEIGHT / (max * 4)
             )
         }
 
@@ -222,19 +217,22 @@
             function draw_dft(content, x, n) {
                 let w = WIDTH / P - (WIDTH / (P * 10));
                 let bar = x * 10;
-                line(context, (w / 2) + w * n, HEIGHT / 2, (w / 2) + w * n, HEIGHT / 2 + 20)
+                line(context, blank + (w / 2) + w * n, HEIGHT / 2, blank + (w / 2) + w * n, HEIGHT / 2 + 20)
                 context.font = '6pt Arial';
+                content.strokeStyle = 'rgba(128, 128, 128, 0.3)'
+                // 周波数スペクトルが存在したら
                 if (x != 0) {
                     content.fillStyle = 'rgba(0, 255, 0)'
                     context.font = '10pt Arial';
-                    content.fillText(x, (w / 2) + w * n, HEIGHT / 2 - bar + 20);
+                    content.fillText(x, blank -5, HEIGHT / 2 - bar);
+                    line(content, blank, HEIGHT / 2 - bar, WIDTH, HEIGHT / 2 - bar)
                     context.font = '6pt Arial';
                 }
                 else content.fillStyle = 'rgba(0, 0, 0)';
-                content.fillText(n, (w / 2) + w * n, HEIGHT / 2 + 30);
+                content.fillText(n, blank + (w / 2) + w * n, HEIGHT / 2 + 30);
                 context.fillStyle = 'rgba(244, 128, 128, 0.3)';
                 // 棒グラフ
-                context.fillRect(w * n, HEIGHT / 2 - bar, w, bar)
+                context.fillRect(20 + w * n, HEIGHT / 2 - bar, w, bar)
                 context.stroke();
             }
         }
