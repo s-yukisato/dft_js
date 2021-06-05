@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>関数表示</h1>
+    <form action="" name="u" id="graph-value">
+        <label for="sample">サンプル数：</label>
+        <input type="number" id="sample" value="10" />
+        <p>
+            関数： y =
+            <input type="number" id="sin_amplitude" value="3" />
+            sin(
+            <input type="number" id="sin_frequency" value="1" />
+            x)
+            +
+            <input type="number" id="cos_amplitude" value="7" />
+            cos(
+            <input type="number" id="cos_frequency" value="3" />
+            x)
+            <input type="button" onclick="main()" value="更新">
+        </p>
+    </form>
+
+    <p>時間領域</p>
+    <canvas id="canvas" width="500" height="400"></canvas>
+    <p>周波数領域</p>
+    <canvas id="frequency-graph" width="500" height="400">周波数領域</canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const f_canvas = document.getElementById('frequency-graph');
+        const context = f_canvas.getContext('2d');
+
+        const WIDTH = 500;
+        const HEIGHT = 400;
+
+        let sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, P;
+
+        main();
+
+        function main() {
+            getValue();
+            drawing();
+        }
+        function getValue() {
+            sin_amplitude = document.getElementById('sin_amplitude').value;
+            sin_frequency = document.getElementById('sin_frequency').value;
+            cos_amplitude = document.getElementById('cos_amplitude').value;
+            cos_frequency = document.getElementById('cos_frequency').value;
+            P = document.getElementById('sample').value;
+        }
+
+        function drawing() {
+            // canvas上のデータを全て消す
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+            // 補助線
+            auxiliary_line(ctx)
+            Graph();
+
+            // canvas上のデータを全て消す
+            context.clearRect(0, 0, WIDTH, HEIGHT);
+            // 補助線
+            // x軸
+            line(context, 0, HEIGHT / 2, WIDTH, HEIGHT / 2)
+            dft()
+        }
+
+        // 直線を引く
+        function line(context, start_x, start_y, end_x, end_y) {
+            context.beginPath();
+            context.moveTo(start_x, start_y);
+            context.lineTo(end_x, end_y);
+            context.closePath();
+            context.stroke();
+        }
+
+        function auxiliary_line(context) {
+            // x軸
+            line(context, 0, HEIGHT / 2, WIDTH, HEIGHT / 2)
+            // y軸
+            line(context, 20, HEIGHT - 10, 20, 10)
+        }
+
+        function Graph(color = "#ff00ff") {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.0;
+            var N = WIDTH;
+
+            const space = N / P;
+            for (var n = 0; n < N; n++) {
+                var x = n + 20;
+                // var y = HEIGHT / 2 - Math.sin(2 * Math.PI * n / WIDTH) * HEIGHT / 2;
+                var y = HEIGHT / 2 - func_y_graph(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, n)
+
+                if (n == 0) {
+                    ctx.moveTo(x, y);
+                    ctx.arc(x, y, 5, 0 * Math.PI / 180, 360 * Math.PI / 180, false);
+                    ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+                    ctx.fill();
+                } else {
+                    if (n % space == 0) {
+                        ctx.stroke()
+                        ctx.beginPath();
+                        ctx.arc(x, y, 5, 0 * Math.PI / 180, 360 * Math.PI / 180, false);
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                        ctx.fill();
+                        // 補助線
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, HEIGHT);
+                        ctx.stroke();
+
+                        ctx.closePath();
+                        ctx.beginPath();
+                        ctx.strokeStyle = color;
+                        ctx.moveTo(x, y)
+
+
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        function addList(n) {
+
+        }
+        // 2π周期
+        function func_y_graph(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, n) {
+            const max = Math.max(sin_amplitude, cos_amplitude)
+            return (
+                sin_amplitude * Math.sin(sin_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 3)
+                + cos_amplitude * Math.cos(cos_frequency * 2 * Math.PI * n / WIDTH) * HEIGHT / (max * 3)
+            )
+        }
+
+        // // 原関数 3sin(x) + 7cos(3x) 定義
+        function func_y(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, x) {
+            return sin_amplitude * Math.sin(sin_frequency * x) + cos_amplitude * Math.cos(cos_frequency * x);
+        }
+
+        function dft() {
+            let f = new Array(P);
+            // データサンプリング
+            for (let m = 0; m < P; m++) {
+                let x = ((2.0 * Math.PI) / P) * m
+                f[m] = func_y(sin_amplitude, sin_frequency, cos_amplitude, cos_frequency, x)
+            }
+            f.forEach((a, index) => console.log(index, a))
+
+            // DFT係数計算
+            console.log("次数\t実数部\t虚数部\t絶対値");
+            for (let n = 0; n < P; n++) {
+                let ar = 0.0;
+                let ai = 0.0;
+                let x;
+                for (let m = 0; m < P; m++) {
+                    x = ((2.0 * Math.PI) / P) * m * n;
+                    // console.log("n=" + n, "m=" + m,f[m] * Math.cos(-x))
+                    ar += f[m] * Math.cos(-x);
+                    ai += f[m] * Math.sin(-x);
+                }
+                ar /= P;
+                ai /= P;
+                x = Math.sqrt(4.0 * ar * ar + 4.0 * ai * ai);
+                x = Math.round(x * 100) / 100
+                draw_dft(context, x, n)
+                console.log(
+                    n,
+                    Math.round(ar * 100) / 100,
+                    Math.round(ai * 100) / 100,
+                    Math.round(x * 100) / 100
+                );
+
+            }
+            function draw_dft(content, x, n) {
+                let w = WIDTH / P - (WIDTH / (P * 10));
+                let bar = x * 20;
+                line(context, (w / 2) + w * n, HEIGHT / 2, (w / 2) + w * n, HEIGHT / 2 + 20)
+                context.font = '6pt Arial';
+                if(x != 0){
+                    content.fillStyle = 'rgba(0, 255, 0)'
+                    context.font = '10pt Arial';
+                    content.fillText(x, (w / 2) + w * n, HEIGHT / 2 - bar + 20);
+                    context.font = '6pt Arial';
+                }
+                else content.fillStyle = 'rgba(0, 0, 0)';
+                content.fillText(n, (w / 2) + w * n, HEIGHT / 2 + 30);
+                context.fillStyle = 'rgba(244, 128, 128, 0.3)';
+                // 棒グラフ
+                context.fillRect(w * n, HEIGHT / 2 - bar, w, bar)
+                context.stroke();
+            }
+        }
+
+
+
+    </script>
+
+</body>
+
+</html>
